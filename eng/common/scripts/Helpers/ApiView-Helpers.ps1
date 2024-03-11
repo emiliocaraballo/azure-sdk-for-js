@@ -29,15 +29,17 @@ function Check-ApiReviewStatus($packageName, $packageVersion, $language, $url, $
     return
   }
   $headers = @{ "ApiKey" = $apiKey }
-  $body = @{
-    language = $lang
-    packageName = $packageName
-    packageVersion = $packageVersion
-  }
 
   try
   {
-    $response = Invoke-WebRequest $url -Method 'GET' -Headers $headers -Body $body
+    $requestUrl = $url+"?language=" + $lang +"&packageName=" +$packageName
+    if ($packageVersion)
+    {
+      $requestUrl = $requestUrl + "&packageVersion=" + $packageVersion
+    }
+    Write-host "URL to check status: $requestUrl"
+    $response = Invoke-WebRequest $requestUrl -Method 'GET' -Headers $headers
+    Write-Host  "Response code: $($response.StatusCode)"
     if ($response.StatusCode -eq '200')
     {
       Write-Host "API Review is approved for package $($packageName)"
@@ -61,5 +63,7 @@ function Check-ApiReviewStatus($packageName, $packageVersion, $language, $url, $
   catch
   {
     Write-Warning "Failed to check API review status for package $($PackageName). You can check http://aka.ms/azsdk/engsys/apireview/faq for more details on API Approval."
+    return '500'
   }
+  return $response.StatusCode
 }
